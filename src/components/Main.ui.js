@@ -88,6 +88,7 @@ import EdgeAccountCallbackManager from '../modules/Core/Account/EdgeAccountCallb
 import * as CONTEXT_API from '../modules/Core/Context/api'
 import EdgeContextCallbackManager from '../modules/Core/Context/EdgeContextCallbackManager.js'
 import EdgeWalletsCallbackManager from '../modules/Core/Wallets/EdgeWalletsCallbackManager.js'
+import DeepLinkingManager from '../modules/DeepLinkingManager.js'
 import PermissionsManager, { type Permission, PermissionStrings } from '../modules/PermissionsManager.js'
 import AutoLogout from '../modules/UI/components/AutoLogout/AutoLogoutConnector'
 import { ContactsLoaderConnecter as ContactsLoader } from '../modules/UI/components/ContactsLoader/indexContactsLoader.js'
@@ -208,7 +209,8 @@ type Props = {
   updateCurrentSceneKey: string => void,
   showReEnableOtpModal: () => void,
   checkEnabledExchanges: () => void,
-  openDrawer: () => void
+  openDrawer: () => void,
+  dispatchAddressDeepLinkReceived: (addressDeepLinkData: Object) => any
 }
 type State = {
   context: ?EdgeContext
@@ -305,8 +307,30 @@ export default class Main extends Component<Props, State> {
       .catch(e => console.log(e))
     Linking.addEventListener('url', this.handleOpenURL)
   }
+
+  handleOpenURL = (event: Object) => {
+    this.doDeepLink(event.url)
+  }
+
   doDeepLink (url: string) {
     const parsedUri = URI.parse(url)
+
+    switch (parsedUri.scheme) {
+      case 'edge':
+      case 'airbitz':
+        this.handleRecoveryToken(parsedUri)
+        break
+      case 'bitcoin':
+      case 'bitcoincash':
+      case 'ethereum':
+      case 'dash':
+      case 'litecoin':
+        this.handleAddress(parsedUri)
+        break
+    }
+  }
+
+  handleRecoveryToken (parsedUri: URI) {
     const query = parsedUri.query
     if (!query || !query.includes('token=')) {
       return
@@ -317,8 +341,56 @@ export default class Main extends Component<Props, State> {
     const token = finalArray[0]
     this.props.urlReceived(token)
   }
-  handleOpenURL = (event: Object) => {
-    this.doDeepLink(event.url)
+
+  handleAddress (parsedUri: URI) {
+    const addressDeepLinkData = {}
+
+    const currencyCode = this.convertCurrencyCodeFromScheme(parsedUri.scheme)
+    if (currencyCode === 'unrecognized') {
+      return
+    }
+
+    addressDeepLinkData.currencyCode = currencyCode
+    addressDeepLinkData.address = parsedUri.host
+    addressDeepLinkData.amount = '0'
+
+    const query = parsedUri.query
+    if (query) {
+      const splitArray = query.split('&')
+
+      splitArray.forEach(parameter => {
+        const splitParameter = parameter.split('=')
+
+        switch (splitParameter[0]) {
+          case 'amount':
+            addressDeepLinkData.amount = splitParameter[1]
+            break
+          default:
+            console.log('Unrecognized currency URI parameter')
+            break
+        }
+      })
+    }
+
+    this.props.dispatchAddressDeepLinkReceived(addressDeepLinkData)
+  }
+
+  convertCurrencyCodeFromScheme (scheme: string) {
+    switch (scheme) {
+      case 'bitcoin':
+        return 'BTC'
+      case 'bitcoincash':
+        return 'BCH'
+      case 'ethereum':
+        return 'ETH'
+      case 'litecoin':
+        return 'LTC'
+      case 'dash':
+        return 'DASH'
+      default:
+        console.log('Unrecognized currency URI scheme')
+        return 'unrecognized'
+    }
   }
 
   updateSceneKeyRequest = () => {
@@ -719,6 +791,8 @@ export default class Main extends Component<Props, State> {
         <EdgeContextCallbackManager />
         <EdgeAccountCallbackManager />
         <EdgeWalletsCallbackManager />
+
+        <DeepLinkingManager />
       </MenuProvider>
     )
   }
