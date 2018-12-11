@@ -10,11 +10,8 @@ import { SEND_CONFIRMATION } from '../constants/indexConstants.js'
 import type { Dispatch } from './ReduxTypes.js'
 
 type DeepLinkingManagerStateProps = {
-  wallets: Array<EdgeCurrencyWallet>,
-  addressDeepLinkData: Object | null,
-  address: string,
-  currencyCode: string,
-  amount: string
+  wallets: Object,
+  addressDeepLinkData: Object
 }
 
 type DeepLinkingManagerDispatchProps = {
@@ -41,17 +38,25 @@ class DeepLinkingManager extends React.Component<Props, State> {
   }
 
   componentDidUpdate () {
-    if (this.props.wallets) this.checkForWallet()
+    if (Object.keys(this.props.wallets).length > 0) this.checkForWallet()
   }
 
   checkForWallet () {
-    const { currencyCode, address, amount } = this.props
+    const { addressDeepLinkData } = this.props
+    const { currencyCode, address, amount } = addressDeepLinkData
 
-    for (let i = 0; i < this.props.wallets.length; ++i) {
-      if (this.props.wallets[i].currencyInfo.currencyCode === currencyCode) {
-        this.props.selectWallet(this.props.wallets[i].id, currencyCode)
+    if (currencyCode === undefined) {
+      return
+    }
+    if (address === undefined) {
+      return
+    }
 
+    for (const wallet in this.props.wallets) {
+      if (this.props.wallets[wallet].currencyCode === currencyCode) {
         this.props.markAddressDeepLinkDone()
+
+        this.props.selectWallet(this.props.wallets[wallet].id, currencyCode)
 
         const guiMakeSpendInfo = {
           spendTargets: [
@@ -62,7 +67,7 @@ class DeepLinkingManager extends React.Component<Props, State> {
           ]
         }
 
-        console.log('QWEQWE', this.props)
+        console.log('QWEQWE found the wallet')
 
         // Route to scan and call scanUri or route to Send with info
         // Actions.sendConfirmation({} guiMakeSpendInfo })
@@ -74,14 +79,10 @@ class DeepLinkingManager extends React.Component<Props, State> {
   }
 }
 
-const mapStateToProps = (state, ownProps): DeepLinkingManagerStateProps => {
-  const wallets = state.ui.wallets.byId
+const mapStateToProps = (state): DeepLinkingManagerStateProps => {
   return {
-    wallets: wallets,
-    addressDeepLinkData: state.core.deepLinking.addressDeepLinkData,
-    address: state.core.deepLinking.addressDeepLinkData,
-    currencyCode: state.core.deepLinking.addressDeepLinkData.currencyCode,
-    amount: state.core.deepLinking.addressDeepLinkData.amount
+    wallets: state.ui.wallets.byId,
+    addressDeepLinkData: state.core.deepLinking.addressDeepLinkData
   }
 }
 

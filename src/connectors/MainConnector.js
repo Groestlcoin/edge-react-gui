@@ -11,10 +11,15 @@ import { selectWallet } from '../actions/WalletActions.js'
 import Main from '../components/Main.ui'
 import { addContext, addUsernames } from '../modules/Core/Context/action.js'
 import { requestPermission } from '../modules/PermissionsManager.js'
-import type { Dispatch } from '../modules/ReduxTypes'
+import type { State, Dispatch } from '../modules/ReduxTypes'
 import { addCurrencyPlugin } from '../modules/Settings/SettingsActions'
 
-const mapStateToProps = () => ({})
+const mapStateToProps = (state: State) => {
+  return {
+    deepLinkPending: state.core.deepLinking.deepLinkPending
+  }
+}
+
 const mapDispatchToProps = (dispatch: Dispatch) => ({
   requestPermission: permission => {
     return requestPermission(permission)
@@ -55,7 +60,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
   },
   dispatchAddressDeepLinkReceived: addressDeepLinkData =>
     dispatch({
-      type: 'PERMISSIONS/UPDATE',
+      type: 'ADDRESS_DEEP_LINK_RECEIVED',
       data: { addressDeepLinkData }
     })
 })

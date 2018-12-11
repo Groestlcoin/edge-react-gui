@@ -5,11 +5,13 @@ import { type Reducer } from 'redux'
 import { type Action } from '../../modules/ReduxTypes.js'
 
 export type DeepLinkingState = {
+  deepLinkPending: boolean,
   passwordRecoveryLink: string | null,
-  addressDeepLinkData: Object | null
+  addressDeepLinkData: Object
 }
 
 const initialState = {
+  deepLinkPending: false,
   passwordRecoveryLink: null,
   addressDeepLinkData: {}
 }
@@ -26,14 +28,16 @@ export const deepLinking: Reducer<DeepLinkingState, Action> = (state = initialSt
     case 'ADDRESS_DEEP_LINK_RECEIVED': {
       return {
         ...state,
-        addressDeepLinkData: action.data
+        deepLinkPending: true,
+        addressDeepLinkData: action.data.addressDeepLinkData
       }
     }
 
     case 'ADDRESS_DEEP_LINK_COMPLETE': {
       return {
         ...state,
-        addressDeepLinkData: null
+        deepLinkPending: false,
+        addressDeepLinkData: {}
       }
     }
 

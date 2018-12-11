@@ -210,7 +210,8 @@ type Props = {
   showReEnableOtpModal: () => void,
   checkEnabledExchanges: () => void,
   openDrawer: () => void,
-  dispatchAddressDeepLinkReceived: (addressDeepLinkData: Object) => any
+  dispatchAddressDeepLinkReceived: (addressDeepLinkData: Object) => any,
+  deepLinkPending: boolean
 }
 type State = {
   context: ?EdgeContext
@@ -345,8 +346,11 @@ export default class Main extends Component<Props, State> {
   handleAddress (parsedUri: URI) {
     const addressDeepLinkData = {}
 
+    console.log('QWEQWE handleAddress', parsedUri)
+
     const currencyCode = this.convertCurrencyCodeFromScheme(parsedUri.scheme)
     if (currencyCode === 'unrecognized') {
+      console.log('QWEQWE Unrecognized currency code')
       return
     }
 
@@ -366,11 +370,13 @@ export default class Main extends Component<Props, State> {
             addressDeepLinkData.amount = splitParameter[1]
             break
           default:
-            console.log('Unrecognized currency URI parameter')
+            console.log('QWEQWE Unrecognized currency URI parameter')
             break
         }
       })
     }
+
+    console.log('QWEQWE dispatchAddressDeepLinkRecieved', addressDeepLinkData)
 
     this.props.dispatchAddressDeepLinkReceived(addressDeepLinkData)
   }
@@ -792,7 +798,7 @@ export default class Main extends Component<Props, State> {
         <EdgeAccountCallbackManager />
         <EdgeWalletsCallbackManager />
 
-        <DeepLinkingManager />
+        { this.props.deepLinkPending && <DeepLinkingManager /> }
       </MenuProvider>
     )
   }
